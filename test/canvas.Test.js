@@ -48,23 +48,35 @@ describe('canvas tests', () => {
     });
 
     describe('convertToPPM', () => {
-        let ppmFile = 'testPPMFile.ppm';
+        let red = new Color(1, 0, 0);
+        let green = new Color(0, 1, 0);
+        let blue = new Color(0, 0, 1);
 
-        it('create a 5 x 5 canvas and save it as ppm file', done => {
-            let red = new Color(1, 0, 0);
-            let green = new Color(0, 1, 0);
-            let blue = new Color(0, 0, 1);
+        let testCanvas = new Canvas(canvasWdith, canvasHeight);
+        testCanvas.writePixel(0, 0, red);
+        testCanvas.writePixel(2, 2, green);
+        testCanvas.writePixel(4, 4, blue);
 
-            let testCanvas = new Canvas(canvasWdith, canvasHeight);
-            testCanvas.writePixel(0, 0, red);
-            testCanvas.writePixel(2, 2, green);
-            testCanvas.writePixel(4, 4, blue);
+        it('save canvas as ppm file', done => {
+            let ppmFile = 'testPPMFile.ppm';
             testCanvas.convertToPPM(ppmFile, err => {
                 if (err) {
                     console.error(`Error writing file ${ppmFile}: ${err}`);
                 }
                 done(err);
             });
+        });
+
+        it('save canvas with bad filename', done => {
+            let badPPMFile = 'boguspath/with\\bad/testPPMFile.ppm';
+            expect(() => {
+                testCanvas.convertToPPM(badPPMFile, err => {
+                    if (err) {
+                        throw new Error(`Error writing file ${badPPMFile}: ${err}`);
+                    }
+                    done(err);
+                });
+            }).to.throw();
         });
     });
 });

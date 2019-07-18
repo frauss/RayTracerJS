@@ -8,5 +8,7 @@
   },
   "author": "Fred Strauss",
   "license": "ISC",
-  "dependencies": {}
+  "dependencies": {
+    "mathjs": "^6.0.2"
+  }
 }
