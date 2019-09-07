@@ -2,6 +2,9 @@ const chai = require('chai'),
     expect = chai.expect;
 
 const Matrix = require('../matrix');
+const Point = require('../point');
+const Vector = require('../vector');
+const RayTracerUtilities = require('../rayTracerUtilities');
 
 describe('matrix tests', () => {
 
@@ -23,14 +26,11 @@ describe('matrix tests', () => {
         });
 
         it('create a 2x2 matrix', () => {
-            let testMatrix = new Matrix([
-                [-3, 5],
-                [1, -2]
-            ]);
-            expect(testMatrix.valueAt(0, 0)).to.equal(-3);
-            expect(testMatrix.valueAt(0, 1)).to.equal(5);
-            expect(testMatrix.valueAt(1, 0)).to.equal(1);
-            expect(testMatrix.valueAt(1, 1)).to.equal(-2);
+            let testMatrix = new Matrix(2, 2);
+            expect(testMatrix.valueAt(0, 0)).to.equal(0);
+            expect(testMatrix.valueAt(0, 1)).to.equal(0);
+            expect(testMatrix.valueAt(1, 0)).to.equal(0);
+            expect(testMatrix.valueAt(1, 1)).to.equal(0);
         });
 
         it('create a 3x3 matrix', () => {
@@ -171,7 +171,7 @@ describe('matrix tests', () => {
             expect(() => {
                 matrix1.multiply(matrix2);
             }).to.throw();
-        })
+        });
     });
     
     describe('identity matrix generation', () => {
@@ -433,6 +433,326 @@ describe('matrix tests', () => {
             let productMatrix = matrix1.multiply(matrix2);
             let resultantMatrix = productMatrix.multiply(matrix2.invert());
             expect(resultantMatrix.isEqual(matrix1)).to.equal(true);
+        });
+    });
+
+    describe('translation matrices', () => {
+        it('create a translation matrix', () => {
+            let x = 5;
+            let y = -3;
+            let z = 2;
+            let translationMatrix = Matrix.translation(x, y, z);
+            expect(translationMatrix.width).to.equal(4);
+            expect(translationMatrix.height).to.equal(4);
+            expect(translationMatrix.valueAt(0, 0)).to.equal(1);
+            expect(translationMatrix.valueAt(3, 3)).to.equal(1);
+            expect(translationMatrix.valueAt(0, 3)).to.equal(x);
+            expect(translationMatrix.valueAt(1, 3)).to.equal(y);
+            expect(translationMatrix.valueAt(2, 3)).to.equal(z);
+        });
+
+        it('multiply a translation matrix by a point', () => {
+            let translationMatrix = Matrix.translation(5, -3, 2);
+            let testPoint = new Point(-3, 4, 5);
+            let resultantPoint = translationMatrix.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(resultantPoint.x).to.equal(2);
+            expect(resultantPoint.y).to.equal(1);
+            expect(resultantPoint.z).to.equal(7);
+        });
+
+        it('multiply a translation matrix by a vector', () => {
+            let translationMatrix = Matrix.translation(5, -3, 2);
+            let testVector = new Vector(-3, 4, 5);
+            let resultantVector = translationMatrix.multiply(testVector);
+            expect(resultantVector instanceof Vector).to.equal(true);
+            expect(resultantVector.x).to.equal(-3);
+            expect(resultantVector.y).to.equal(4);
+            expect(resultantVector.z).to.equal(5);
+        });
+    });
+
+    describe('scaling matrices', () => {
+        it('create a scaling matrix', () => {
+            let x = 2;
+            let y = 3;
+            let z = 4;
+            let scalingMatrix = Matrix.scaling(x, y, z);
+            expect(scalingMatrix.width).to.equal(4);
+            expect(scalingMatrix.height).to.equal(4);
+            expect(scalingMatrix.valueAt(0, 0)).to.equal(x);
+            expect(scalingMatrix.valueAt(1, 1)).to.equal(y);
+            expect(scalingMatrix.valueAt(2, 2)).to.equal(z);
+            expect(scalingMatrix.valueAt(3, 3)).to.equal(1);
+        });
+
+        it('multiply a scaling matrix by a point', () => {
+            let scalingMatrix = Matrix.scaling(2, 3, 4);
+            let testPoint = new Point(-4, 6, 8);
+            let resultantPoint = scalingMatrix.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(resultantPoint.x).to.equal(-8);
+            expect(resultantPoint.y).to.equal(18);
+            expect(resultantPoint.z).to.equal(32);
+        });
+
+        it('multiply a scaling matrix by a vector', () => {
+            let scalingMatrix = Matrix.scaling(2, 3, 4);
+            let testVector = new Vector(-4, 6, 8);
+            let resultantVector = scalingMatrix.multiply(testVector);
+            expect(resultantVector instanceof Vector).to.equal(true);
+            expect(resultantVector.x).to.equal(-8);
+            expect(resultantVector.y).to.equal(18);
+            expect(resultantVector.z).to.equal(32);
+        });
+
+        it('multiply by the inverse of a scaling matrix', () => {
+            let scalingMatrix = Matrix.scaling(2, 3, 4);
+            let invertedScalingMatrix = scalingMatrix.invert();
+            let testVector = new Vector(-4, 6, 8);
+            let resultantVector = invertedScalingMatrix.multiply(testVector);
+            expect(resultantVector instanceof Vector).to.equal(true);
+            expect(resultantVector.x).to.equal(-2);
+            expect(resultantVector.y).to.equal(2);
+            expect(resultantVector.z).to.equal(2);
+        });
+
+        it('test reflection by scaling by a negative value', () => {
+            let scalingMatrix = Matrix.scaling(-1, 1, 1);
+            let testPoint = new Point(2, 3, 4);
+            let resultantPoint = scalingMatrix.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(resultantPoint.x).to.equal(-2);
+            expect(resultantPoint.y).to.equal(3);
+            expect(resultantPoint.z).to.equal(4);
+        });
+    });
+
+    describe('x axis rotation', () => {
+        it('create an x axis rotation matrix', () => {
+            let quarterRadians = Math.PI / 4;
+            let quarterMatrix = Matrix.rotation_x(quarterRadians);
+            expect(quarterMatrix.valueAt(0, 0)).to.equal(1);
+            expect(quarterMatrix.valueAt(0, 3)).to.equal(0);
+            expect(RayTracerUtilities.valueEqual(quarterMatrix.valueAt(1, 1), Math.cos(quarterRadians))).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(quarterMatrix.valueAt(1, 2), -Math.sin(quarterRadians))).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(quarterMatrix.valueAt(2, 1), Math.sin(quarterRadians))).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(quarterMatrix.valueAt(2, 2), Math.cos(quarterRadians))).to.equal(true);
+            expect(quarterMatrix.valueAt(3, 0)).to.equal(0);
+            expect(quarterMatrix.valueAt(3, 3)).to.equal(1);
+        });
+
+        it('rotating a point around the x axis', () => {
+            let testPoint = new Point(0, 1, 0);
+            let halfQuarter = Matrix.rotation_x(Math.PI / 4);
+            let fullQuarter = Matrix.rotation_x(Math.PI / 2);
+            let resultantPoint = halfQuarter.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, 0)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, Math.sqrt(2) / 2)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, Math.sqrt(2) / 2)).to.equal(true);
+            resultantPoint = fullQuarter.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, 0)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, 0)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 1)).to.equal(true);
+        });
+
+        it('ingerse of an x-rotation rotates in the opposite direction', () => {
+            let testPoint = new Point(0, 1, 0);
+            let halfQuarter = Matrix.rotation_x(Math.PI / 4);
+            let invertedHalfQuarter = halfQuarter.invert();
+            let resultantPoint = invertedHalfQuarter.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, 0)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, Math.sqrt(2) / 2)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, -Math.sqrt(2) / 2)).to.equal(true);
+        });
+    });
+
+    describe('y axis rotation', () => {
+        it('create an y axis rotation matrix', () => {
+            let quarterRadians = Math.PI / 4;
+            let quarterMatrix = Matrix.rotation_y(quarterRadians);
+            expect(quarterMatrix.valueAt(1, 1)).to.equal(1);
+            expect(quarterMatrix.valueAt(3, 3)).to.equal(1);
+            expect(RayTracerUtilities.valueEqual(quarterMatrix.valueAt(0, 0), Math.cos(quarterRadians))).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(quarterMatrix.valueAt(0, 2), Math.sin(quarterRadians))).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(quarterMatrix.valueAt(2, 0), -Math.sin(quarterRadians))).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(quarterMatrix.valueAt(2, 2), Math.cos(quarterRadians))).to.equal(true);
+            expect(quarterMatrix.valueAt(0, 1)).to.equal(0);
+            expect(quarterMatrix.valueAt(0, 3)).to.equal(0);
+        });
+
+        it('rotating a point around the y axis', () => {
+            let testPoint = new Point(0, 0, 1);
+            let halfQuarter = Matrix.rotation_y(Math.PI / 4);
+            let fullQuarter = Matrix.rotation_y(Math.PI / 2);
+            let resultantPoint = halfQuarter.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, Math.sqrt(2) / 2)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, 0)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, Math.sqrt(2) / 2)).to.equal(true);
+            resultantPoint = fullQuarter.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, 1)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, 0)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 0)).to.equal(true);
+        });
+
+        it('inverse of an y-rotation rotates in the opposite direction', () => {
+            let testPoint = new Point(0, 0, 1);
+            let halfQuarter = Matrix.rotation_y(Math.PI / 4);
+            let invertedHalfQuarter = halfQuarter.invert();
+            let resultantPoint = invertedHalfQuarter.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, -Math.sqrt(2) / 2)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, 0)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, Math.sqrt(2) / 2)).to.equal(true);
+        });
+    });
+
+    describe('z axis rotation', () => {
+        it('create an z axis rotation matrix', () => {
+            let quarterRadians = Math.PI / 4;
+            let quarterMatrix = Matrix.rotation_z(quarterRadians);
+            expect(quarterMatrix.valueAt(2, 2)).to.equal(1);
+            expect(quarterMatrix.valueAt(3, 3)).to.equal(1);
+            expect(RayTracerUtilities.valueEqual(quarterMatrix.valueAt(0, 0), Math.cos(quarterRadians))).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(quarterMatrix.valueAt(0, 1), -Math.sin(quarterRadians))).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(quarterMatrix.valueAt(1, 0), Math.sin(quarterRadians))).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(quarterMatrix.valueAt(1, 1), Math.cos(quarterRadians))).to.equal(true);
+            expect(quarterMatrix.valueAt(0, 2)).to.equal(0);
+            expect(quarterMatrix.valueAt(0, 3)).to.equal(0);
+        });
+
+        it('rotating a point around the z axis', () => {
+            let testPoint = new Point(0, 1, 0);
+            let halfQuarter = Matrix.rotation_z(Math.PI / 4);
+            let fullQuarter = Matrix.rotation_z(Math.PI / 2);
+            let resultantPoint = halfQuarter.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, -Math.sqrt(2) / 2)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, Math.sqrt(2) / 2)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 0)).to.equal(true);
+            resultantPoint = fullQuarter.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, -1)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, 0)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 0)).to.equal(true);
+        });
+
+        it('inverse of an z-rotation rotates in the opposite direction', () => {
+            let testPoint = new Point(0, 1, 0);
+            let halfQuarter = Matrix.rotation_z(Math.PI / 4);
+            let invertedHalfQuarter = halfQuarter.invert();
+            let resultantPoint = invertedHalfQuarter.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, Math.sqrt(2) / 2)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, Math.sqrt(2) / 2)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 0)).to.equal(true);
+        });
+    });
+
+    describe('shearing transformations', () => {
+        it('moving x in proportion to y', () => {
+            let testPoint = new Point(2, 3, 4);
+            let shearingMatrix = Matrix.shearing(1, 0, 0, 0, 0, 0);
+            let resultantPoint = shearingMatrix.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, 5)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, 3)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 4)).to.equal(true);
+        });
+
+        it('moving x in proportion to z', () => {
+            let testPoint = new Point(2, 3, 4);
+            let shearingMatrix = Matrix.shearing(0, 1, 0, 0, 0, 0);
+            let resultantPoint = shearingMatrix.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, 6)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, 3)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 4)).to.equal(true);
+        });
+
+        it('moving y in proportion to x', () => {
+            let testPoint = new Point(2, 3, 4);
+            let shearingMatrix = Matrix.shearing(0, 0, 1, 0, 0, 0);
+            let resultantPoint = shearingMatrix.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, 2)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, 5)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 4)).to.equal(true);
+        });
+
+        it('moving y in proportion to z', () => {
+            let testPoint = new Point(2, 3, 4);
+            let shearingMatrix = Matrix.shearing(0, 0, 0, 1, 0, 0);
+            let resultantPoint = shearingMatrix.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, 2)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, 7)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 4)).to.equal(true);
+        });
+
+        it('moving z in proportion to x', () => {
+            let testPoint = new Point(2, 3, 4);
+            let shearingMatrix = Matrix.shearing(0, 0, 0, 0, 1, 0);
+            let resultantPoint = shearingMatrix.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, 2)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, 3)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 6)).to.equal(true);
+        });
+
+        it('moving z in proportion to y', () => {
+            let testPoint = new Point(2, 3, 4);
+            let shearingMatrix = Matrix.shearing(0, 0, 0, 0, 0, 1);
+            let resultantPoint = shearingMatrix.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, 2)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, 3)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 7)).to.equal(true);
+        });
+    });
+
+    describe('chaining transformations', () => {
+        it('apply transformations in sequence', () => {
+            let testPoint = new Point(1, 0, 1);
+            let rotationMatrix = Matrix.rotation_x(Math.PI / 2);
+            let scalingMatrix = Matrix.scaling(5, 5, 5);
+            let translationMatrix = Matrix.translation(10, 5, 7);
+
+            let resultantPoint = rotationMatrix.multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, 1)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, -1)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 0)).to.equal(true);
+
+            resultantPoint = scalingMatrix.multiply(resultantPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, 5)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, -5)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 0)).to.equal(true);
+
+            resultantPoint = translationMatrix.multiply(resultantPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, 15)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, 0)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 7)).to.equal(true);
+        });
+
+        it('apply transformations in sequence', () => {
+            let testPoint = new Point(1, 0, 1);
+            let rotationMatrix = Matrix.rotation_x(Math.PI / 2);
+            let scalingMatrix = Matrix.scaling(5, 5, 5);
+            let translationMatrix = Matrix.translation(10, 5, 7);
+
+            let resultantPoint = translationMatrix.multiply(scalingMatrix).multiply(rotationMatrix).multiply(testPoint);
+            expect(resultantPoint instanceof Point).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.x, 15)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.y, 0)).to.equal(true);
+            expect(RayTracerUtilities.valueEqual(resultantPoint.z, 7)).to.equal(true);
         });
     });
 });

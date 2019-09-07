@@ -1,4 +1,5 @@
 const chai = require('chai'),
+    should = chai.should(),
     expect = chai.expect;
 
 const Canvas = require('../canvas');
@@ -47,7 +48,7 @@ describe('canvas tests', () => {
         });
     });
 
-    describe('convertToPPM', () => {
+    describe('convertToPPM', function() {
         let red = new Color(1, 0, 0);
         let green = new Color(0, 1, 0);
         let blue = new Color(0, 0, 1);
@@ -57,7 +58,7 @@ describe('canvas tests', () => {
         testCanvas.writePixel(2, 2, green);
         testCanvas.writePixel(4, 4, blue);
 
-        it('save canvas as ppm file', done => {
+        it('save canvas as ppm file', function(done) {
             let ppmFile = 'testPPMFile.ppm';
             testCanvas.convertToPPM(ppmFile, err => {
                 if (err) {
@@ -67,16 +68,18 @@ describe('canvas tests', () => {
             });
         });
 
-        it('save canvas with bad filename', done => {
+        it('save canvas with bad filename', function(done) {
             let badPPMFile = 'boguspath/with\\bad/testPPMFile.ppm';
-            expect(() => {
+            should.Throw(function () {
                 testCanvas.convertToPPM(badPPMFile, err => {
                     if (err) {
                         throw new Error(`Error writing file ${badPPMFile}: ${err}`);
                     }
-                    done(err);
+                    else {
+                        done();
+                    }
                 });
-            }).to.throw();
+            }, Error);
         });
     });
 });

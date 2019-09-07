@@ -9,21 +9,24 @@ function tick(environment, projectile) {
         velocity: newVelocity
     };
 }
+describe('chapter 1 test exercise', () => {
+    let myProjectile = {
+        position: new Point(0, 1, 0),
+        velocity: new Vector(1, 1, 0).normalize()
+    };
 
-let myProjectile = {
-    position: new Point(0, 1, 0),
-    velocity: new Vector(1, 1, 0).normalize()
-};
+    let myEnvironment = {
+        gravity: new Vector(0, -0.1, 0),
+        wind: new Vector(-0.01, 0, 0)
+    };
 
-let myEnvironment = {
-    gravity: new Vector(0, -0.1, 0),
-    wind: new Vector(-0.01, 0, 0)
-};
-
-let tickCount = 1;
-console.log(`Initial position (${myProjectile.position.x}, ${myProjectile.position.y}, ${myProjectile.position.z})`);
-while (myProjectile.position.y > 0) {
-    myProjectile = tick(myEnvironment, myProjectile);
-    console.log(`Position after tick ${tickCount} is (${myProjectile.position.x}, ${myProjectile.position.y}, ${myProjectile.position.z})`);
-    tickCount += 1;
-}
+    it('chapter 1 test exercise', () => {
+        let tickCount = 1;
+        console.log(`Initial position (${myProjectile.position.x}, ${myProjectile.position.y}, ${myProjectile.position.z})`);
+        while (myProjectile.position.y > 0) {
+            myProjectile = tick(myEnvironment, myProjectile);
+            console.log(`Position after tick ${tickCount} is (${myProjectile.position.x}, ${myProjectile.position.y}, ${myProjectile.position.z})`);
+            tickCount += 1;
+        }
+    });
+});

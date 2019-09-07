@@ -1,11 +1,27 @@
 const mathjs = require('mathjs');
 
+const Point = require('./point');
+const Vector = require('./vector');
+const RayTracerUtilities = require('./rayTracerUtilities');
+
 class Matrix {
 
-    constructor(data) {
-        this.width = data[0].length;
-        this.height = data.length;
-        this.data = mathjs.matrix(data);
+    constructor() {
+
+        // See if width and height are specified in constructor
+        if (arguments.length === 2) {
+            this.width = arguments[0];
+            this.height = arguments[1];
+            let initialData = Array.from(Array(this.height).fill(0), () => new Array(this.width).fill(0));
+            this.data = mathjs.matrix(initialData);
+        }
+
+        // Otherwise assume an array of arrays
+        else {
+            this.width = arguments[0][0].length;
+            this.height = arguments[0].length;
+            this.data = mathjs.matrix(arguments[0]);
+        }
     }
 
     valueAt(row, column) {
@@ -36,8 +52,9 @@ class Matrix {
         else {
             for (let rowIndex = 0; rowIndex < this.height; rowIndex++) {
                 for (let columnIndex = 0; columnIndex < this.width; columnIndex++) {
-                    if (!this.valueEqual(rowIndex, columnIndex, matrixToCompare.valueAt(rowIndex, columnIndex)))
-                        return false;
+                    let comparisonResult = this.valueEqual(rowIndex, columnIndex, matrixToCompare.valueAt(rowIndex, columnIndex));
+                    if (!comparisonResult)
+                        return comparisonResult;
                 }
             }
             return true;
@@ -56,24 +73,51 @@ class Matrix {
         return new Matrix(resultantMatrix);
     }
 
-    multiply(matrix2) {
-        if (this.width !== matrix2.height) {
-            throw new Error(`Matrix (${this.width}) must have the same # of columns as Matrix 2 (${matrix2.height} has rows`);
-        }
-        else {
-            let resultantMatrix = [];
-            for (let i = 0; i < this.height; i++) {
-                let resultantRow = [];
-                for (let j = 0; j < matrix2.width; j++) {
-                    let cellSum = 0;
-                    for (let k = 0; k < matrix2.height; k++) {
-                        cellSum += this.valueAt(i, k) * matrix2.valueAt(k, j);
-                    }
-                    resultantRow.push(cellSum);
-                }
-                resultantMatrix.push(resultantRow);
+    multiply() {
+        if (arguments[0] instanceof Matrix) {
+            let matrix2 = arguments[0];
+            if (this.width !== matrix2.height) {
+                throw new Error(`Matrix (${this.width}) must have the same # of columns as Matrix 2 (${matrix2.height} has rows`);
             }
-            return new Matrix(resultantMatrix);
+            else {
+                let resultantMatrix = [];
+                for (let i = 0; i < this.height; i++) {
+                    let resultantRow = [];
+                    for (let j = 0; j < matrix2.width; j++) {
+                        let cellSum = 0;
+                        for (let k = 0; k < matrix2.height; k++) {
+                            cellSum += this.valueAt(i, k) * matrix2.valueAt(k, j);
+                        }
+                        resultantRow.push(cellSum);
+                    }
+                    resultantMatrix.push(resultantRow);
+                }
+                return new Matrix(resultantMatrix);
+            }
+        }
+        else if (arguments[0] instanceof Point) {
+            let pointMatrix = new Matrix([
+                [arguments[0].x],
+                [arguments[0].y],
+                [arguments[0].z],
+                [1]
+            ]);
+            let productMatrix = this.multiply(pointMatrix);
+            return new Point(productMatrix.valueAt(0, 0),
+                productMatrix.valueAt(1, 0),
+                productMatrix.valueAt(2, 0));
+        }
+        else if (arguments[0] instanceof Vector) {
+            let vectorMatrix = new Matrix([
+                [arguments[0].x],
+                [arguments[0].y],
+                [arguments[0].z],
+                [0]
+            ]);
+            let productMatrix = this.multiply(vectorMatrix);
+            return new Vector(productMatrix.valueAt(0, 0),
+                productMatrix.valueAt(1, 0),
+                productMatrix.valueAt(2, 0));
         }
     }
 
@@ -171,11 +215,68 @@ class Matrix {
     }
 
     valueEqual(rowIndex, columnIndex, valueToCompare) {
-        const precision = 0.00001;
-        return (Math.abs(this.valueAt(rowIndex, columnIndex) - valueToCompare) <= precision);
+        return RayTracerUtilities.valueEqual(this.valueAt(rowIndex, columnIndex), valueToCompare);
     };
 
+    static translation(x, y, z) {
+        let translationMatrix = new Matrix(4, 4).identity();
+        translationMatrix.setValue(0, 3, x);
+        translationMatrix.setValue(1, 3, y);
+        translationMatrix.setValue(2, 3, z);
+        return translationMatrix;
+    }
 
+    static scaling(x, y, z) {
+        let scalingMatrix = new Matrix(4, 4).identity();
+        scalingMatrix.setValue(0, 0, x);
+        scalingMatrix.setValue(1, 1, y);
+        scalingMatrix.setValue(2, 2, z);
+        return scalingMatrix;
+    }
+
+    static rotation_x(r) {
+        let rotationMatrix = new Matrix(4, 4).identity();
+        let sinValue = Math.sin(r);
+        let cosValue = Math.cos(r);
+        rotationMatrix.setValue(1, 1, cosValue);
+        rotationMatrix.setValue(1, 2, -sinValue);
+        rotationMatrix.setValue(2, 1, sinValue);
+        rotationMatrix.setValue(2, 2, cosValue);
+        return rotationMatrix;
+    }
+
+    static rotation_y(r) {
+        let rotationMatrix = new Matrix(4, 4).identity();
+        let sinValue = Math.sin(r);
+        let cosValue = Math.cos(r);
+        rotationMatrix.setValue(0, 0, cosValue);
+        rotationMatrix.setValue(2, 0, -sinValue);
+        rotationMatrix.setValue(0, 2, sinValue);
+        rotationMatrix.setValue(2, 2, cosValue);
+        return rotationMatrix;
+    }
+
+    static rotation_z(r) {
+        let rotationMatrix = new Matrix(4, 4).identity();
+        let sinValue = Math.sin(r);
+        let cosValue = Math.cos(r);
+        rotationMatrix.setValue(0, 0, cosValue);
+        rotationMatrix.setValue(0, 1, -sinValue);
+        rotationMatrix.setValue(1, 0, sinValue);
+        rotationMatrix.setValue(1, 1, cosValue);
+        return rotationMatrix;
+    }
+
+    static shearing(xy, xz, yx, yz, zx, zy) {
+        let shearingMatrix = new Matrix(4, 4).identity();
+        shearingMatrix.setValue(0, 1, xy);
+        shearingMatrix.setValue(0, 2, xz);
+        shearingMatrix.setValue(1, 0, yx);
+        shearingMatrix.setValue(1, 2, yz);
+        shearingMatrix.setValue(2, 0, zx);
+        shearingMatrix.setValue(2, 1, zy);
+        return shearingMatrix;
+    }
 }
 
 module.exports = (Matrix);

@@ -65,6 +65,10 @@ class Vector {
             (this.z * productVector.x) - (this.x * productVector.z),
             (this.x * productVector.y) - (this.y * productVector.x));
     }
+
+    reflect(normalVector) {
+        return this.subtract(normalVector.multiply(this.dotProduct(normalVector) * 2));
+    }
 }
 
 module.exports = (Vector);

@@ -32,6 +32,14 @@ class Color {
         let blueProduct = this.blue * colorToMultiply.blue;
         return new Color(redProduct, greenProduct, blueProduct);
     }
+
+    static black() {
+        return new Color(0, 0, 0);
+    }
+
+    static white() {
+        return new Color(1, 1, 1);
+    }
 }
 
 module.exports = (Color);
